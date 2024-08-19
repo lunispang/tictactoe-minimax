@@ -29,7 +29,7 @@ impl Mark {
 
 #[derive(Debug, Clone, Copy)]
 struct Board {
-    marks: [Option<Mark>; 9]
+    marks: [Option<Mark>; 9],
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -42,7 +42,9 @@ enum State {
 const NO_MARK: Option<Mark> = None;
 impl Board {
     fn new() -> Self {
-        Board { marks: [NO_MARK; 9] }
+        Board {
+            marks: [NO_MARK; 9],
+        }
     }
 
     fn print(&self) {
@@ -110,18 +112,24 @@ impl Board {
         }
 
         let r = self.marks.iter().filter(|m| m.is_some()).count();
-        if r%2 == 0 {
-            State::Turn(Mark::X)            
+        if r % 2 == 0 {
+            State::Turn(Mark::X)
         } else {
-            State::Turn(Mark::O)            
+            State::Turn(Mark::O)
         }
     }
     fn place(&mut self, i: usize) -> Option<()> {
         let state = self.get_state();
         let turn = match state {
             State::Turn(m) => m,
-            _ => { return None; },
+            _ => {
+                return None;
+            }
         };
+
+        if i > 8 {
+            return None;
+        }
 
         match self.marks[i] {
             Some(_) => None,
@@ -132,9 +140,14 @@ impl Board {
         }
     }
     fn empty(&self) -> Vec<usize> {
-        self.marks.iter().enumerate().filter(|(_, e)| e.is_none()).map(|(i, _)| i).collect()
+        self.marks
+            .iter()
+            .enumerate()
+            .filter(|(_, e)| e.is_none())
+            .map(|(i, _)| i)
+            .collect()
     }
-} 
+}
 
 fn minimax(board: Board, player: Mark) -> (usize, i8) {
     let possible = board.empty();
@@ -147,7 +160,7 @@ fn minimax(board: Board, player: Mark) -> (usize, i8) {
                 results.push((mve, -minimax(new_board, player.other()).1));
             }
             State::Tie => results.push((mve, 0)),
-            State::Winner(m) => results.push((mve, m.to_value() * player.to_value()))
+            State::Winner(m) => results.push((mve, m.to_value() * player.to_value())),
         }
     }
     *results.iter().max_by_key(|t| t.1).unwrap()
@@ -163,16 +176,20 @@ fn main() {
         match mve {
             Ok(mv) => {
                 if board.place(mv).is_none() {
-                   println!("piece already placed there"); 
+                    println!("piece already placed there/out of bounds");
+                    continue;
                 }
-            },
+                if !board.empty().is_empty() {
+                    board.place(minimax(board, Mark::O).0).unwrap();
+                } else {
+                    break;
+                }
+            }
             Err(_) => {
-               println!("invalid position (enter as index in range 0..9)"); 
+                println!("invalid position (enter as index in range 0..9)");
+                continue;
             }
         };
-        if !board.empty().is_empty() {
-            board.place(minimax(board, Mark::O).0).unwrap();
-        } else { break; }
     }
     board.print();
 }
